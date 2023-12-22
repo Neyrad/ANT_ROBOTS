@@ -34,7 +34,6 @@
 
 
 /*-------------------TIME COST DEFINES-------------------*/
-#define ROTATE_TIME 3 	// 1.2 sec
 #define MOVE_TIME 1		
 #define BOX_GRAB_TIME 2
 #define BOX_DROP_TIME 1
@@ -44,7 +43,7 @@
 //		1 (m/step) / ROBOT_VELOCITY (m/s) = 0.4 (sec/step)
 // 9000 * 0.4 = 3600
 // => 1 hr of real time is 9000 simulation steps
-#define GLOBAL_TIME_END (9000 * 24 * 14)
+#define GLOBAL_TIME_END (9000 * 24 * 60)
 
 typedef enum
 {
@@ -226,10 +225,11 @@ extern void InitROSS();
 extern void Free();
 extern void FinalizeROSS();
 extern message_type ChooseDir(int u, int d, int l, int r, struct _robot* robot);
+extern message_type RandChooseDir(int u, int d, int l, int r, struct _robot* robot);
 extern void AntWeightsInit();
 extern void PrintWeights(const char* log_folder_path);
 extern void UpdateWeights(struct _robot* robot);
-extern bool BeenNeighborCells(struct _robot* robot);
+extern bool NeighborCellsBlocked(struct _robot* robot);
 extern void LOG(int id, message_type Event);
 
 #endif

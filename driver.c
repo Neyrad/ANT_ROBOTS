@@ -47,6 +47,7 @@ int glb_time = 0;
 int RobotResponded[MAX_ROBOTS];
 bool NewWeights = FALSE;
 unsigned long long EventCounter = 0;
+FILE* f;
 
 //Init function
 // - called once for each LP
@@ -131,8 +132,27 @@ void model_event(state* s, tw_bf* bf, message* in_msg, tw_lp* lp)
 			RobotResponded[in_msg->sender-1] = TRUE;
 			if (EveryoneResponded(RobotResponded, Robots.N))
 			{	
-				PrintMap(path_to_log_folder);
-				PrintWeights(path_to_log_folder);
+				if (glb_time % 50 == 0)
+				{
+					int global_boxes_delivered = 0;
+						for (int i = 0; i < Robots.N; ++i)
+							global_boxes_delivered += Robots.data[i].boxes_delivered;
+					printf("glb_time = %d, global_boxes_delivered = %d\n", glb_time, global_boxes_delivered);
+				}
+				
+				//PrintMap(path_to_log_folder);
+				//PrintWeights(path_to_log_folder);
+				
+				
+				////////////////////////////////////////////////////
+				////// FOR SOME REASON DOESN"T WORK WITHOUT IT /////
+				////////////////////////////////////////////////////
+				FILE* f = fopen("empty.txt", "w");
+				fclose(f);
+				////////////////////////////////////////////////////
+				////////////////////////////////////////////////////
+				////////////////////////////////////////////////////
+				
 				glb_time += 1;
 				
 				for (int i = 0; i < Robots.N; ++i)

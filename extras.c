@@ -15,6 +15,7 @@ extern const char* path_to_room_file;
 extern const char* path_to_robots_file;
 extern const char* path_to_pairs;
 extern const char* path_to_log_file;
+extern FILE* f;
 
 void PrintMap(const char* log_folder_path)
 {   
@@ -255,17 +256,21 @@ message_type CalcNextMove(struct _robot* robot)
 		return BOX_DROP;
 	}
 	
-	bool u_blocked = (robot->y == 0                || storage.room[y-1][x] == CELL_WALL || robot->visited[y-1][x]);
-	bool d_blocked = (robot->y == storage.height-1 || storage.room[y+1][x] == CELL_WALL || robot->visited[y+1][x]);
-	bool l_blocked = (robot->x == 0                || storage.room[y][x-1] == CELL_WALL || robot->visited[y][x-1]);
-	bool r_blocked = (robot->x == storage.length-1 || storage.room[y][x+1] == CELL_WALL || robot->visited[y][x+1]);
+	bool u_blocked = (robot->y == 0                || storage.room[y-1][x] == CELL_WALL);
+	bool d_blocked = (robot->y == storage.height-1 || storage.room[y+1][x] == CELL_WALL);
+	bool l_blocked = (robot->x == 0                || storage.room[y][x-1] == CELL_WALL);
+	bool r_blocked = (robot->x == storage.length-1 || storage.room[y][x+1] == CELL_WALL);
 	
-	int u_weight = u_blocked? 0: (storage.robots[y-1][x] != CELL_EMPTY)? (AntWeights[y-1][x] / 2): AntWeights[y-1][x];
-	int d_weight = d_blocked? 0: (storage.robots[y+1][x] != CELL_EMPTY)? (AntWeights[y+1][x] / 2): AntWeights[y+1][x];
-	int l_weight = l_blocked? 0: (storage.robots[y][x-1] != CELL_EMPTY)? (AntWeights[y][x-1] / 2): AntWeights[y][x-1];
-	int r_weight = r_blocked? 0: (storage.robots[y][x+1] != CELL_EMPTY)? (AntWeights[y][x+1] / 2): AntWeights[y][x+1];
+	int u_weight = u_blocked? 0: (storage.robots[y-1][x] != CELL_EMPTY || robot->visited[y-1][x])? (AntWeights[y-1][x] / 10): AntWeights[y-1][x];
+	int d_weight = d_blocked? 0: (storage.robots[y+1][x] != CELL_EMPTY || robot->visited[y+1][x])? (AntWeights[y+1][x] / 10): AntWeights[y+1][x];
+	int l_weight = l_blocked? 0: (storage.robots[y][x-1] != CELL_EMPTY || robot->visited[y][x-1])? (AntWeights[y][x-1] / 10): AntWeights[y][x-1];
+	int r_weight = r_blocked? 0: (storage.robots[y][x+1] != CELL_EMPTY || robot->visited[y][x+1])? (AntWeights[y][x+1] / 10): AntWeights[y][x+1];
 	
-	return ChooseDir(u_weight, d_weight, l_weight, r_weight, robot);
+	srand(time(NULL));
+	int rng = rand() % 3;
+	if (rng < 0)
+		return ChooseDir(u_weight, d_weight, l_weight, r_weight, robot);
+	return RandChooseDir(u_weight, d_weight, l_weight, r_weight, robot);
 }
 
 void UpdateWeights(struct _robot* robot)
@@ -283,7 +288,7 @@ message_type ChooseDir(int u, int d, int l, int r, struct _robot* robot)
 	int x = robot->x;
 	int y = robot->y;
 	
-	if (u == 0 && d == 0 && l == 0 && r == 0)
+	if (NeighborCellsBlocked(robot))
 		for (int y = 0; y < storage.height; ++y)
 			for (int x = 0; x < storage.length; ++x)
 				robot->visited[y][x] = FALSE;
@@ -308,22 +313,74 @@ message_type ChooseDir(int u, int d, int l, int r, struct _robot* robot)
 	return MOVE_R;
 }
 
-bool BeenNeighborCells(struct _robot* robot)
+message_type RandChooseDir(int u, int d, int l, int r, struct _robot* robot)
 {
 	int x = robot->x;
 	int y = robot->y;
 	
-	if (x == 0 && y == 0) return robot->visited[y+1][x] && robot->visited[y][x+1];
-	if (x == 0 && y == 8) return robot->visited[y-1][x] && robot->visited[y][x+1];
-	if (x == 8 && y == 0) return robot->visited[y][x-1] && robot->visited[y+1][x];
-	if (x == 8 && y == 8) return robot->visited[y-1][x] && robot->visited[y][x-1];
+	if (NeighborCellsBlocked(robot))
+		for (int y = 0; y < storage.height; ++y)
+			for (int x = 0; x < storage.length; ++x)
+				robot->visited[y][x] = FALSE;
 	
-	if (x == 0) return robot->visited[y-1][x] && robot->visited[y+1][x] && robot->visited[y][x+1];
-	if (x == 8) return robot->visited[y-1][x] && robot->visited[y+1][x] && robot->visited[y][x-1];
-	if (y == 0) return robot->visited[y][x-1] && robot->visited[y][x+1] && robot->visited[y+1][x];
-	if (y == 8) return robot->visited[y][x-1] && robot->visited[y][x+1] && robot->visited[y-1][x];
+	int sum = u + d + l + r;
+	//printf("RandChooseDir(%d, %d, %d, %d) - [%d, %d]\n", u, d, l, r, x, y);
+	srand(time(NULL));
+	int rng = rand() % sum;
+	if (rng < u)
+		return MOVE_U;
+	if (rng < u + d)
+		return MOVE_D;
+	if (rng < u + d + l)
+		return MOVE_L;
+	return MOVE_R;
+}
+
+bool NeighborCellsBlocked(struct _robot* robot)
+{
+	int x = robot->x;
+	int y = robot->y;
 	
-	return robot->visited[y-1][x] && robot->visited[y+1][x] && robot->visited[y][x-1] && robot->visited[y][x+1];
+	if (x == 0 && y == 0)
+		return (robot->visited[y+1][x] || storage.room[y+1][x] == CELL_WALL || storage.robots[y+1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x+1] || storage.room[y][x+1] == CELL_WALL || storage.robots[y][x+1] != CELL_EMPTY);
+			   
+	if (x == 0 && y == 8)
+		return (robot->visited[y-1][x] || storage.room[y-1][x] == CELL_WALL || storage.robots[y-1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x+1] || storage.room[y][x+1] == CELL_WALL || storage.robots[y][x+1] != CELL_EMPTY);
+			   
+	if (x == 8 && y == 0)
+		return (robot->visited[y+1][x] || storage.room[y+1][x] == CELL_WALL || storage.robots[y+1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x-1] || storage.room[y][x-1] == CELL_WALL || storage.robots[y][x-1] != CELL_EMPTY);
+			   
+	if (x == 8 && y == 8)
+		return (robot->visited[y-1][x] || storage.room[y-1][x] == CELL_WALL || storage.robots[y-1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x-1] || storage.room[y][x-1] == CELL_WALL || storage.robots[y][x-1] != CELL_EMPTY);
+	
+	if (x == 0) 
+		return (robot->visited[y+1][x] || storage.room[y+1][x] == CELL_WALL || storage.robots[y+1][x] != CELL_EMPTY) && \
+			   (robot->visited[y-1][x] || storage.room[y-1][x] == CELL_WALL || storage.robots[y-1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x+1] || storage.room[y][x+1] == CELL_WALL || storage.robots[y][x+1] != CELL_EMPTY);
+	
+	if (x == 8)
+		return (robot->visited[y+1][x] || storage.room[y+1][x] == CELL_WALL || storage.robots[y+1][x] != CELL_EMPTY) && \
+			   (robot->visited[y-1][x] || storage.room[y-1][x] == CELL_WALL || storage.robots[y-1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x-1] || storage.room[y][x-1] == CELL_WALL || storage.robots[y][x-1] != CELL_EMPTY);
+			   
+	if (y == 0)
+		return (robot->visited[y+1][x] || storage.room[y+1][x] == CELL_WALL || storage.robots[y+1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x-1] || storage.room[y][x-1] == CELL_WALL || storage.robots[y][x-1] != CELL_EMPTY) && \
+			   (robot->visited[y][x+1] || storage.room[y][x+1] == CELL_WALL || storage.robots[y][x+1] != CELL_EMPTY);
+			   
+	if (y == 8)
+		return (robot->visited[y-1][x] || storage.room[y-1][x] == CELL_WALL || storage.robots[y-1][x] != CELL_EMPTY) && \
+			   (robot->visited[y][x-1] || storage.room[y][x-1] == CELL_WALL || storage.robots[y][x-1] != CELL_EMPTY) && \
+			   (robot->visited[y][x+1] || storage.room[y][x+1] == CELL_WALL || storage.robots[y][x+1] != CELL_EMPTY);
+	
+	return (robot->visited[y-1][x] || storage.room[y-1][x] == CELL_WALL || storage.robots[y-1][x] != CELL_EMPTY) && \
+		   (robot->visited[y+1][x] || storage.room[y+1][x] == CELL_WALL || storage.robots[y+1][x] != CELL_EMPTY) && \
+		   (robot->visited[y][x-1] || storage.room[y][x-1] == CELL_WALL || storage.robots[y][x-1] != CELL_EMPTY) && \
+		   (robot->visited[y][x+1] || storage.room[y][x+1] == CELL_WALL || storage.robots[y][x+1] != CELL_EMPTY);
 }
 
 void GetPair(struct _robot* robot)
@@ -357,7 +414,8 @@ void SimulateROSS(int argc, char* argv[])
 void FilesInit()
 {
 	Parse(path_to_room_file, storage.room);
-	Parse(path_to_robots_file, storage.robots);	
+	Parse(path_to_robots_file, storage.robots);
+	f = fopen(path_to_log_file, "a");
 }
 
 void InitROSS()
@@ -383,11 +441,13 @@ void AntWeightsInit()
 void Free()
 {
 	FreePairs();
+	fclose(f);
 }
 
 void FinalizeROSS()
 {
 	PrintNSteps(path_to_log_folder);
+	PrintWeights(path_to_log_folder);
 	Free();
 }
 
@@ -397,6 +457,7 @@ void PrintWeights(const char* log_folder_path)
     sprintf(path, "%s/WEIGHTS_STEP_%lu.csv", log_folder_path, step_number);
 
     FILE* f = fopen(path, "w");
+
     for (int y = 0; y < storage.height; ++y) {
         for (int x = 0; x < storage.length; ++x) {
             fprintf(f, "%d", AntWeights[y][x]);
@@ -405,12 +466,14 @@ void PrintWeights(const char* log_folder_path)
         }
         fprintf(f, "\n");
     }
-    fclose(f);
+  
+	fclose(f);
+
 }
 
 void LOG(int id, message_type Event)
 {
-	FILE* f = fopen(path_to_log_file, "a");
+	/*
 	fprintf(f, "TIME: %8d | ROBOT: %d | EVENT: ", glb_time, id);
 	switch(Event)
 	{
@@ -443,5 +506,6 @@ void LOG(int id, message_type Event)
 			break;
 	}
 	fprintf(f, "COORDS: (%d, %d)\n", Robots.data[id-1].x, Robots.data[id-1].y);
-	fclose(f);
+	*/
+	fprintf(f, "%d,%d,%d,%d,%d\n", glb_time, id, Event, Robots.data[id-1].x, Robots.data[id-1].y);
 }
