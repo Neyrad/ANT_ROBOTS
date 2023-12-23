@@ -420,14 +420,23 @@ void FilesInit()
 
 void InitROSS()
 {
+	printf("ALIVE\n");
+	
 	FilesInit();
 	PairsInit(path_to_pairs);
     RobotsInit();
 	AntWeightsInit();
 	
+	printf("ALIVE\n");
+	
 	RobotsPrint();
+	printf("ALIVE\n");
     PrintMap(path_to_log_folder);
+	printf("ALIVE\n");
+	
 	PrintWeights(path_to_log_folder);
+	
+	printf("ALIVE\n");
 }
 
 void AntWeightsInit()
@@ -457,6 +466,7 @@ void PrintWeights(const char* log_folder_path)
     sprintf(path, "%s/WEIGHTS_STEP_%lu.csv", log_folder_path, step_number);
 
     FILE* f = fopen(path, "w");
+	assert(f);
 
     for (int y = 0; y < storage.height; ++y) {
         for (int x = 0; x < storage.length; ++x) {

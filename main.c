@@ -15,7 +15,9 @@ const char* path_to_log_file    = "LOG/LOG.csv";
 
 int main(int argc, char* argv[])
 {
+	printf("main successfully\n");
 	InitROSS();
+	printf("Initizlized successfully\n");
     SimulateROSS(argc, argv);
 	FinalizeROSS();
 }

@@ -132,7 +132,7 @@ void model_event(state* s, tw_bf* bf, message* in_msg, tw_lp* lp)
 			RobotResponded[in_msg->sender-1] = TRUE;
 			if (EveryoneResponded(RobotResponded, Robots.N))
 			{	
-				if (glb_time % 50 == 0)
+				if (glb_time % 50000 == 0)
 				{
 					int global_boxes_delivered = 0;
 						for (int i = 0; i < Robots.N; ++i)
@@ -147,8 +147,9 @@ void model_event(state* s, tw_bf* bf, message* in_msg, tw_lp* lp)
 				////////////////////////////////////////////////////
 				////// FOR SOME REASON DOESN"T WORK WITHOUT IT /////
 				////////////////////////////////////////////////////
-				FILE* f = fopen("empty.txt", "w");
-				fclose(f);
+				//FILE* f = fopen("empty.txt", "w");
+				//fclose(f);
+				//printf("CHECK\n");
 				////////////////////////////////////////////////////
 				////////////////////////////////////////////////////
 				////////////////////////////////////////////////////
@@ -166,7 +167,7 @@ void model_event(state* s, tw_bf* bf, message* in_msg, tw_lp* lp)
 							for (int x = 0; x < storage.length; ++x)
 								Robots.data[i].visited[y][x] = FALSE;
 					
-					printf("model_event(): NewWeights => All Clean\n");
+					//printf("model_event(): NewWeights => All Clean\n");
 					NewWeights = FALSE;
 				}
 			

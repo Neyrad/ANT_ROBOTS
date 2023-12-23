@@ -43,7 +43,7 @@
 //		1 (m/step) / ROBOT_VELOCITY (m/s) = 0.4 (sec/step)
 // 9000 * 0.4 = 3600
 // => 1 hr of real time is 9000 simulation steps
-#define GLOBAL_TIME_END (9000 * 24 * 60)
+#define GLOBAL_TIME_END (9000 * 24 * 365)
 
 typedef enum
 {
